@@ -29,7 +29,11 @@ const updateMenu = (apiYaml, apiVersion, languages) => {
       name: tag.name,
       url: (language === 'en' ? `/api/${apiVersion}/${getTagSlug(tag.name)}/` : `/${language}/api/${apiVersion}/${getTagSlug(tag.name)}/` ),
       identifier: tag.name,
-      generated: true
+      generated: true,
+      params: {
+        "unstable": tag['x-unstable'] || false,
+        "version": apiVersion
+      }
     });
 
     // just get this sections data
@@ -42,7 +46,11 @@ const updateMenu = (apiYaml, apiVersion, languages) => {
           name: action.summary,
           parent: tag.name,
           url: `#` + getTagSlug(action.summary),
-          generated: true
+          generated: true,
+          params: {
+            "unstable": 'x-unstable' in action || false,
+            "version": apiVersion
+          }
         });
     });
 
