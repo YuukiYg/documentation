@@ -14,55 +14,69 @@ const supportedLangs = ['en'];
  * @param {object} apiYaml - object with data
  * @param {string} apiVersion - string with version e.g v1
  */
-const updateMenu = (apiYaml, apiVersion, languages) => {
+const updateMenu = (specData, specs, languages) => {
 
   languages.forEach((language) => {
     const currentMenuYaml = yaml.safeLoad(fs.readFileSync(`./config/_default/menus/menus.${language}.yaml`, 'utf8'));
 
   // filter out auto generated menu items so we just have hardcoded ones
-  const newMenuArray = currentMenuYaml[`api_${apiVersion}`].filter((entry => !entry.hasOwnProperty("generated")));
+  const newMenuArray = (currentMenuYaml[`api`] || []).filter((entry => !entry.hasOwnProperty("generated")));
 
-  // now add back in all the auto generated menu items from specs
-  apiYaml.tags.forEach((tag) => {
+  specData.forEach((apiYaml, index) => {
+    const apiVersion = specs[index].split('/')[3];
+    // now add back in all the auto generated menu items from specs
+    apiYaml.tags.forEach((tag) => {
 
-    newMenuArray.push({
-      name: tag.name,
-      url: (language === 'en' ? `/api/${apiVersion}/${getTagSlug(tag.name)}/` : `/${language}/api/${apiVersion}/${getTagSlug(tag.name)}/` ),
-      identifier: tag.name,
-      generated: true,
-      params: {
-        "unstable": tag['x-unstable'] || false,
-        "version": apiVersion
-      }
-    });
-
-    // just get this sections data
-    Object.keys(apiYaml.paths)
-      .filter((path) => isTagMatch(apiYaml.paths[path], tag.name))
-      .map((path) => Object.values(apiYaml.paths[path]))
-      .reduce((obj, item) => ([...obj, ...item]), [])
-      .forEach((action) => {
+      const existingMenuItemIndex = newMenuArray.findIndex((i) => i.name === tag.name);
+      if(existingMenuItemIndex > -1) {
+        // already exists
+        // newMenuArray[existingMenuItemIndex].params["versions"].push()
+      } else {
+        // doesn't exist lets add it
         newMenuArray.push({
-          name: action.summary,
-          parent: tag.name,
-          url: `#` + getTagSlug(action.summary),
+          name: tag.name,
+          url: (language === 'en' ? `/api/latest/${getTagSlug(tag.name)}/` : `/${language}/api/latest/${getTagSlug(tag.name)}/` ),
+          identifier: tag.name,
           generated: true,
           params: {
-            "unstable": 'x-unstable' in action || false,
-            "version": apiVersion
+            "unstable": tag['x-unstable'] || false
           }
         });
-    });
+      }
 
+      // just get this sections data
+      Object.keys(apiYaml.paths)
+        .filter((path) => isTagMatch(apiYaml.paths[path], tag.name))
+        .map((path) => Object.values(apiYaml.paths[path]))
+        .reduce((obj, item) => ([...obj, ...item]), [])
+        .forEach((action) => {
+          // instead of push we need to insert after last parent: tag.name
+          const indx = newMenuArray.findIndex((i) => i.parent === tag.name);
+          const item = {
+            name: action.summary,
+            parent: tag.name,
+            url: `#` + getTagSlug(action.summary),
+            generated: true,
+            params: {
+              "unstable": 'x-unstable' in action || false,
+              "version": apiVersion
+            }
+          };
+          newMenuArray.splice(indx, 0, item);
+      });
+
+    });
   });
 
+
+
   // generate new yaml menu
-  currentMenuYaml[`api_${apiVersion}`] = newMenuArray;
+  currentMenuYaml[`api`] = newMenuArray;
   const newMenuYaml = yaml.dump(currentMenuYaml, {lineWidth: -1});
 
   // save new yaml menu
   fs.writeFileSync(`./config/_default/menus/menus.${language}.yaml`, newMenuYaml, 'utf8');
-  console.log(`successfully updated ${apiVersion} ./config/_default/menus/menus.${language}.yaml`);
+  console.log(`successfully updated ./config/_default/menus/menus.${language}.yaml`);
   })
 
 
@@ -845,15 +859,15 @@ const processSpecs = (specs) => {
           fs.writeFileSync(pathToJson, jsonString, 'utf8');
 
           // create translation ready datafiles
-          createTranslations(fileData, deref, version);
+          //createTranslations(fileData, deref, version);
 
           // make a copy in static for postman
           // the postman copy needs to not include the empty "tags" that we
           // included to ensure redirection in the docs page from v2 <-> v1
-          const derefStripEmptyTags = lodash.cloneDeep(deref);
-          derefStripEmptyTags.tags = derefStripEmptyTags.tags.filter((tag) => !tag.description.toLowerCase().includes("see api version"));
-          const jsonStringStripEmptyTags = safeJsonStringify(derefStripEmptyTags, null, 2);
-          fs.writeFileSync(`./static/resources/json/full_spec_${version}.json`, jsonStringStripEmptyTags, 'utf8');
+          //const derefStripEmptyTags = lodash.cloneDeep(deref);
+          //derefStripEmptyTags.tags = derefStripEmptyTags.tags.filter((tag) => !tag.description.toLowerCase().includes("see api version"));
+          //const jsonStringStripEmptyTags = safeJsonStringify(derefStripEmptyTags, null, 2);
+          //fs.writeFileSync(`./static/resources/json/full_spec_${version}.json`, jsonStringStripEmptyTags, 'utf8');
 
           updateMenu(fileData, version, supportedLangs);
           createPages(fileData, deref, version);
@@ -877,6 +891,10 @@ const processSpecs = (specs) => {
           process.exitCode = 1;
         })
     });
+
+  // update menu with all specs
+  const specData = specs.map((spec) => yaml.safeLoad(fs.readFileSync(spec, 'utf8')));
+  updateMenu(specData, specs, supportedLangs);
 };
 
 

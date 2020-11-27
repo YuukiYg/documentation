@@ -26,7 +26,7 @@
 {{ end }}
 
 <ul class="list-unstyled">
-{{ range $menu }}
+{{ range .Site.Menus.api }}
     <!-- check if on /api/ top level section page, don't generate sub anchors if true -->
     {{ if and (.HasChildren) (ne $currentPage.CurrentSection.RelPermalink "/api/" ) }}
         <li class="{{ if or ($currentPage.IsMenuCurrent $apiMenu .) ($currentPage.HasMenuCurrent $apiMenu .) (eq $currentEnURL .URL) }}active{{ end }}">
@@ -37,7 +37,7 @@
                 {{ range .Children }}
                     <li class="nav-item {{ if $currentPage.IsMenuCurrent $apiMenu . }}active{{ end }}">
                         <a class="nav-link" href="{{ if hasPrefix .URL "#" }}#{{ .Name | anchorize }}{{ else }}{{ (strings.TrimLeft "/" .URL) | absLangURL }}{{ end }}" data-target="#{{.Identifier}}">
-                            <span class="d-inline-block">{{ .Name }}</span>
+                            <span class="d-inline-block">{{ .Name }} [{{ .Params.version }}]</span>
                         </a>
                     </li>
                 {{ end }}
