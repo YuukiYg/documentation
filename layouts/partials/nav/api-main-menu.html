@@ -1,13 +1,6 @@
 {{ $dot := . }}
-{{ .Scratch.Set "apiVersion" "v1"}}
 
-{{ if in .Permalink "api/v2" }}
-    {{ .Scratch.Set "apiVersion" "v2"}}
-{{ end }}
-
-{{ $apiVersion := .Scratch.Get "apiVersion"}}
-
-{{ $apiMenu := print "api_" $apiVersion}}
+{{ $apiMenu := "api" }}
 
 <!-- if no api menu in other languages fallback to english -->
 {{ with index .Site.Menus $apiMenu }}
@@ -26,7 +19,7 @@
 {{ end }}
 
 <ul class="list-unstyled">
-{{ range .Site.Menus.api }}
+{{ range $menu }}
     <!-- check if on /api/ top level section page, don't generate sub anchors if true -->
     {{ if and (.HasChildren) (ne $currentPage.CurrentSection.RelPermalink "/api/" ) }}
         <li class="{{ if or ($currentPage.IsMenuCurrent $apiMenu .) ($currentPage.HasMenuCurrent $apiMenu .) (eq $currentEnURL .URL) }}active{{ end }}">

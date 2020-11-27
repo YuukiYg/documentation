@@ -103,6 +103,11 @@ const createPages = (apiYaml, deref, apiVersion) => {
 
     // build page
     fs.writeFileSync(`./content/en/api/${apiVersion}/${newDirName}/_index.md`, indexYamlStr, 'utf8');
+
+    // create a copy in /latest/
+    fs.mkdirSync(`./content/en/api/latest/${newDirName}`, {recursive: true});
+    fs.writeFileSync(`./content/en/api/latest/${newDirName}/_index.md`, indexYamlStr, 'utf8');
+
     console.log(`successfully wrote ./content/en/api/${apiVersion}/${newDirName}/_index.md`);
   });
 
@@ -859,17 +864,17 @@ const processSpecs = (specs) => {
           fs.writeFileSync(pathToJson, jsonString, 'utf8');
 
           // create translation ready datafiles
-          //createTranslations(fileData, deref, version);
+          createTranslations(fileData, deref, version);
 
           // make a copy in static for postman
           // the postman copy needs to not include the empty "tags" that we
           // included to ensure redirection in the docs page from v2 <-> v1
-          //const derefStripEmptyTags = lodash.cloneDeep(deref);
-          //derefStripEmptyTags.tags = derefStripEmptyTags.tags.filter((tag) => !tag.description.toLowerCase().includes("see api version"));
-          //const jsonStringStripEmptyTags = safeJsonStringify(derefStripEmptyTags, null, 2);
-          //fs.writeFileSync(`./static/resources/json/full_spec_${version}.json`, jsonStringStripEmptyTags, 'utf8');
+          const derefStripEmptyTags = lodash.cloneDeep(deref);
+          derefStripEmptyTags.tags = derefStripEmptyTags.tags.filter((tag) => !tag.description.toLowerCase().includes("see api version"));
+          const jsonStringStripEmptyTags = safeJsonStringify(derefStripEmptyTags, null, 2);
+          fs.writeFileSync(`./static/resources/json/full_spec_${version}.json`, jsonStringStripEmptyTags, 'utf8');
 
-          updateMenu(fileData, version, supportedLangs);
+          //updateMenu(fileData, version, supportedLangs);
           createPages(fileData, deref, version);
           createResources(fileData, JSON.parse(jsonString), version);
 
