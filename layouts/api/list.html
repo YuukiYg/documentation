@@ -8,6 +8,11 @@
 
     {{ $dot := . }}
 
+    {{ $currentPageMenuIdentifier := "" }}
+    {{ range where .Site.Menus.api "URL" .RelPermalink }}
+      {{ $currentPageMenuIdentifier = .Identifier }}
+    {{ end }}
+
     {{ .Scratch.Set "apiVersion" "v1"}}
 
     {{ if in .Permalink "api/v2" }}
@@ -24,9 +29,10 @@
         {{ end }}
       {{ end }}
     {{ end }}
-  {{ $ParamTitleEn := ($.Scratch.Get "ParamTitleEn") }}
+    {{ $ParamTitleEn := ($.Scratch.Get "ParamTitleEn") }}
 
-    {{ $d := index $dot.Site.Data.api $apiVersion "full_spec_deref" }}
+    {{ $d := index $dot.Site.Data.api.v1 "full_spec_deref" }}
+    {{ $d2 := index $dot.Site.Data.api.v2 "full_spec_deref" }}
 
     <!-- get lang specific data file -->
     {{ $tagSlug := path.Base .File.Dir }}
@@ -63,6 +69,7 @@
 
     {{ $.Scratch.Set "globalRegions" ($.Scratch.Get "regions") }}
 
+{{ range $d := (slice $d $d2) }}
     {{ range $k, $v := (index $d "tags") }}
         {{ if eq $ParamTitleEn $v.name }}
             {{ $translate_tag := (index $translate_tags $tagSlug) | default (dict) }}
@@ -602,4 +609,6 @@
             {{ end }}
         {{ end }}
     {{ end }}
+{{ end }}
+
 {{ end }}
