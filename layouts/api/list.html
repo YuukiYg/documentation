@@ -8,10 +8,12 @@
 
     {{ $dot := . }}
 
+    {{/*
     {{ $currentPageMenuIdentifier := "" }}
     {{ range where .Site.Menus.api "URL" .RelPermalink }}
       {{ $currentPageMenuIdentifier = .Identifier }}
     {{ end }}
+    */}}
 
     {{ .Scratch.Set "apiVersion" "v1"}}
 
@@ -69,7 +71,12 @@
 
     {{ $.Scratch.Set "globalRegions" ($.Scratch.Get "regions") }}
 
-{{ range $d := (slice $d $d2) }}
+{{ range $d_index, $d := (slice $d $d2) }}
+    {{ $loop_api_version := (print "v" (add $d_index 1)) }}
+
+    <!-- for accessing v1/v2 resources from latest -->
+    {{ $versionPage := $dot.Site.GetPage (print "/api/" $loop_api_version "/" (path.Base $dot.File.Dir) "/_index.md") }}
+
     {{ range $k, $v := (index $d "tags") }}
         {{ if eq $ParamTitleEn $v.name }}
             {{ $translate_tag := (index $translate_tags $tagSlug) | default (dict) }}
@@ -328,25 +335,27 @@
                                                 <!-- Get Json and HTML -->
                                                 {{ $dot.Scratch.Set "json" "" }}
                                                 {{ $dot.Scratch.Set "html" "" }}
-                                                {{ with $dot.Resources.Match "examples.json" }}
-                                                    {{ range . }}
-                                                      {{ $data := . | unmarshal}}
-                                                      {{ $req := (index (index $data $context.action.operationId) "request") }}
-                                                      {{ if $req }}
+                                                {{ if $versionPage }}
+                                                  {{ with $versionPage.Resources.Match "examples.json" }}
+                                                      {{ range . }}
+                                                        {{ $data := . | unmarshal}}
+                                                        {{ $req := (index (index $data $context.action.operationId) "request") }}
+                                                        {{ if $req }}
 
-                                                          {{ $jsonifiedData := (index $req "json") | jsonify (dict "indent" "  ") }}
-                                                          {{ $jsonifiedData = replace (replace $jsonifiedData "\\u003c" "<") "\\u003e" ">"  }}
+                                                            {{ $jsonifiedData := (index $req "json") | jsonify (dict "indent" "  ") }}
+                                                            {{ $jsonifiedData = replace (replace $jsonifiedData "\\u003c" "<") "\\u003e" ">"  }}
 
-                                                          {{ $json_curl := (index $req "json_curl") | jsonify (dict "indent" "  ") }}
-                                                          {{ $json_curl = replace (replace $json_curl "\\u003c" "<") "\\u003e" ">"  }}
+                                                            {{ $json_curl := (index $req "json_curl") | jsonify (dict "indent" "  ") }}
+                                                            {{ $json_curl = replace (replace $json_curl "\\u003c" "<") "\\u003e" ">"  }}
 
-                                                          {{ $dot.Scratch.Set "json" (highlight ($jsonifiedData) "json" "") }}
-                                                          {{ $.Scratch.Set "jsonRequestBody" $json_curl }}
-                                                          {{ $dot.Scratch.Set "html" (index $req "html") }}
-                                                      {{ else }}
-                                                          {{ warnf "Could not load html/json request for %q" $context.action.operationId }}
+                                                            {{ $dot.Scratch.Set "json" (highlight ($jsonifiedData) "json" "") }}
+                                                            {{ $.Scratch.Set "jsonRequestBody" $json_curl }}
+                                                            {{ $dot.Scratch.Set "html" (index $req "html") }}
+                                                        {{ else }}
+                                                            {{ warnf "Could not load html/json request for %q" $context.action.operationId }}
+                                                        {{ end }}
                                                       {{ end }}
-                                                    {{ end }}
+                                                  {{ end }}
                                                 {{ end }}
                                                 {{ $json := ($dot.Scratch.Get "json") }}
                                                 {{ $html := ($dot.Scratch.Get "html") }}
@@ -435,7 +444,7 @@
                                                 <!-- Get Json and HTML -->
                                                 {{ $dot.Scratch.Set "json" "" }}
                                                 {{ $dot.Scratch.Set "html" "" }}
-                                                {{ with $dot.Resources.Match "examples.json" }}
+                                                {{ with $versionPage.Resources.Match "examples.json" }}
                                                     {{ range . }}
                                                     {{ $data := . | unmarshal}}
                                                     {{ $res := (index (index (index $data $context.action.operationId) "responses") $response_code) }}
@@ -520,7 +529,7 @@
                             {{ $codeLangs := slice "curl" }}
 
                             {{/* match all Page Resource code examples by operationId */}}
-                            {{ with $dot.Resources.Match (printf "%s%s" .action.operationId ".*" ) }}
+                            {{ with $versionPage.Resources.Match (printf "%s%s" .action.operationId ".*" ) }}
 
                                 {{ range . }}
                                 {{ $file_extension := index (split (path.Ext .) ".") 1 }}
@@ -574,7 +583,7 @@
                                     </div>
                                 </div>
 
-                            {{ with $dot.Resources.Match (printf "%s%s" .action.operationId ".*" ) }}
+                            {{ with $versionPage.Resources.Match (printf "%s%s" .action.operationId ".*" ) }}
                                 {{ $count := 1 }}
                                 {{ range . }}
 
