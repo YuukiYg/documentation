@@ -36,7 +36,7 @@ const updateMenu = (specData, specs, languages) => {
         newMenuArray.push({
           name: tag.name,
           url: (language === 'en' ? `/api/latest/${getTagSlug(tag.name)}/` : `/${language}/api/latest/${getTagSlug(tag.name)}/` ),
-          identifier: tag.name,
+          identifier: getTagSlug(tag.name),
           generated: true,
           params: {
             "unstable": tag['x-unstable'] || false
@@ -54,8 +54,9 @@ const updateMenu = (specData, specs, languages) => {
           const indx = newMenuArray.findIndex((i) => i.parent === tag.name);
           const item = {
             name: action.summary,
-            parent: tag.name,
             url: `#` + getTagSlug(action.summary),
+            identifier: `${apiVersion}-${getTagSlug(action.summary)}`,
+            parent: getTagSlug(tag.name),
             generated: true,
             params: {
               "unstable": 'x-unstable' in action || false,
