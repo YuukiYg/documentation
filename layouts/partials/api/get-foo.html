@@ -1,0 +1,16 @@
+{{ $dot := . }}
+{{ $s := newScratch }}
+{{ $operationid := .operationid }}
+{{ $spec := .spec }}
+
+{{ range $path_key, $path_object := $spec.paths }}
+    {{ range $action_type, $action := $path_object }}
+        {{ if eq ($action.operationId | lower) ($operationid | lower) }}
+            {{ $s.SetInMap "data" "pathKey" $path_key }}
+            {{ $s.SetInMap "data" "actionType" $action_type }}
+            {{ $s.SetInMap "data" "action" $action }}
+        {{ end }}
+    {{ end }}
+{{ end }}
+
+{{ return ($s.Get "data") }}

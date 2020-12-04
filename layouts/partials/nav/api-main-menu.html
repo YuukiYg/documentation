@@ -30,7 +30,7 @@
                 {{ range .Children }}
                     <li class="nav-item {{ if $currentPage.IsMenuCurrent $apiMenu . }}active{{ end }}">
                         <a class="nav-link" href="{{ if hasPrefix .URL "#" }}#{{ .Name | anchorize }}{{ else }}{{ (strings.TrimLeft "/" .URL) | absLangURL }}{{ end }}" data-target="#{{.Identifier}}">
-                            <span class="d-inline-block">{{ .Name }} [{{ .Params.version }}]</span>
+                            <span class="d-inline-block">{{ .Name }} [{{ delimit .Params.versions ", " }}]</span>
                         </a>
                     </li>
                 {{ end }}
